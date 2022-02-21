@@ -1,37 +1,42 @@
 require('dotenv').config();
-const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v10');
-const { Client, Intents } = require('discord.js');
+const {REST} = require('@discordjs/rest');
+const {Routes} = require('discord-api-types/v10');
+const {Client, Intents} = require('discord.js');
+const {SlashCommandBuilder} = require('@discordjs/builders');
 
-const { coinFlip } = require('./commands');
+const { choose, coinFlip } = require('./commands');
 
-const { APPLICATION_ID, CLIENT_TOKEN, GUILD_ID } = process.env;
+const {APPLICATION_ID, CLIENT_TOKEN, GUILD_ID} = process.env;
 
 const commands = [
-  {
-    name: 'rereping',
-    description: 'Replies with RerePong!',
-  },
-  {
-    name: 'coinflip',
-    description: 'Flip a coin',
-  },
+  new SlashCommandBuilder().setName('rereping').setDescription('Replies with RerePong!'),
+  new SlashCommandBuilder().setName('coinflip').setDescription('Flip a coin'),
+  new SlashCommandBuilder()
+    .setName('choose')
+    .setDescription('Choose from one of the inputs')
+    .addStringOption(option =>
+      option.setName('options')
+        .setDescription('Input the option separated by space')
+        .setRequired(true)
+    ),
 ];
 
-const rest = new REST({ version: '10' }).setToken(CLIENT_TOKEN);
+const rest = new REST({version: '10'}).setToken(CLIENT_TOKEN);
 
-(async () => {try {
-  console.log('Started refreshing application (/) commands.');
+(async () => {
+  try {
+    console.log('Started refreshing application (/) commands.');
 
-  await rest.put(
-    Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID),
-    { body: commands },
-  ).then(() => {
-    console.log('Successfully reloaded application (/) commands.');
-  });
-} catch (error) {
-  console.error(error);
-}})();
+    await rest.put(
+      Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID),
+      {body: commands},
+    ).then(() => {
+      console.log('Successfully reloaded application (/) commands.');
+    });
+  } catch (error) {
+    console.error(error);
+  }
+})();
 
 const client = new Client({intents: [Intents.FLAGS.GUILDS]});
 
@@ -42,13 +47,21 @@ client.on('ready', () => {
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isCommand()) return;
 
-  switch(interaction.commandName) {
+  switch (interaction.commandName) {
     case 'rereping':
       await interaction.reply('RerePong!');
       break;
 
     case 'coinflip':
       await interaction.reply(coinFlip());
+      break;
+
+    case 'choose':
+      const [option] = interaction.options.data;
+      const optionArray = option.value.toString().trim().split(' ') || [];
+      const result = choose(optionArray);
+
+      await interaction.reply(result);
       break;
   }
 });
