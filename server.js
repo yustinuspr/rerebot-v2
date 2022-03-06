@@ -1,8 +1,9 @@
 require('dotenv').config();
-const {REST} = require('@discordjs/rest');
-const {Routes} = require('discord-api-types/v10');
-const {Client, Intents} = require('discord.js');
-const {SlashCommandBuilder} = require('@discordjs/builders');
+const cron = require("node-cron");
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v10');
+const { Client, Intents } = require('discord.js');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 
 const { choose, coinFlip } = require('./commands');
 const { getCurrentQuarter, getDaysToEndQuarter } = require('./quarterly');
