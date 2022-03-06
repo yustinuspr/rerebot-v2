@@ -5,8 +5,9 @@ const {Client, Intents} = require('discord.js');
 const {SlashCommandBuilder} = require('@discordjs/builders');
 
 const { choose, coinFlip } = require('./commands');
+const { getCurrentQuarter, getDaysToEndQuarter } = require('./quarterly');
 
-const {APPLICATION_ID, CLIENT_TOKEN, GUILD_ID} = process.env;
+const { APPLICATION_ID, CLIENT_TOKEN } = process.env;
 
 const commands = [
   new SlashCommandBuilder().setName('rereping').setDescription('Replies with RerePong!'),
@@ -22,21 +23,6 @@ const commands = [
 ];
 
 const rest = new REST({version: '10'}).setToken(CLIENT_TOKEN);
-
-(async () => {
-  try {
-    console.log('Started refreshing application (/) commands.');
-
-    await rest.put(
-      Routes.applicationGuildCommands(APPLICATION_ID, GUILD_ID),
-      {body: commands},
-    ).then(() => {
-      console.log('Successfully reloaded application (/) commands.');
-    });
-  } catch (error) {
-    console.error(error);
-  }
-})();
 
 const client = new Client({intents: [Intents.FLAGS.GUILDS]});
 
@@ -63,6 +49,33 @@ client.on('interactionCreate', async (interaction) => {
 
       await interaction.reply(result);
       break;
+
+    case 'quarterly':
+      const { channelId } = interaction;
+      const currentQuarter = getCurrentQuarter();
+      await cron.schedule('0 10 * * *', async () => {
+        const channel = await client.channels.fetch(channelId);
+        await channel.send(`${getDaysToEndQuarter()} to end of Q${currentQuarter}`);
+      }, {
+        scheduled: true,
+        timezone: "Asia/Jakarta"
+      });
+      await interaction.reply('Cron scheduled');
+  }
+});
+
+client.on('guildCreate', async (guild) => {
+  try {
+    console.log('Started refreshing application (/) commands.');
+
+    await rest.put(
+      Routes.applicationGuildCommands(APPLICATION_ID, guild.id),
+      { body: commands },
+    ).then(() => {
+      console.log('Successfully reloaded application (/) commands.');
+    });
+  } catch (error) {
+    console.error(error);
   }
 });
 
